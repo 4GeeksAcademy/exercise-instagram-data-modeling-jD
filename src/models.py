@@ -8,13 +8,33 @@ from eralchemy2 import render_er
 Base = declarative_base()
 
 class User(Base):
-    __tablename__="user"
-    id= Column(Integer, primary_key=True)
+    __tablename__ = "user"
+    id = Column(Integer, primary_key=True)
     user_name = Column(String(250), index=True)
     first_name = Column(String(250))
     last_name = Column(String(250))
-    email= Column(String(250), nullable=False)
+    email = Column(String(250), nullable=False)
+    
+    followers = relationship(
+        'Follower',
+        foreign_keys='Follower.user_to_id',
+        back_populates='user_to'
+    )
+    
+    followings = relationship(
+        'Follower',
+        foreign_keys='Follower.user_from_id',
+        back_populates='user_from'
+    )
 
+class Follower(Base):
+    __tablename__ = "follower"
+    id = Column(Integer, primary_key=True)
+    user_from_id = Column(Integer, ForeignKey("user.id"))
+    user_to_id = Column(Integer, ForeignKey("user.id"))
+
+    user_from = relationship('User', foreign_keys=[user_from_id], back_populates='followings')
+    user_to = relationship('User', foreign_keys=[user_to_id], back_populates='followers')
 class Post(Base):
     __tablename__="post"
     id = Column(Integer, primary_key=True)
@@ -30,12 +50,7 @@ class Comment(Base):
     user= relationship(User)
     post= relationship(Post)
 
-class Follower(Base):
-    __tablename__= "follower"
-    id= Column (Integer, primary_key=True)
-    user_from_id = Column(Integer, ForeignKey("User.id"))
-    user_to_id= Column(Integer,ForeignKey("User.id"))
-    user =relationship(User)
+
 
 class Media(Base):
     __tablename__= "media"
