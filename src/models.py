@@ -1,6 +1,6 @@
 import os
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String, Enum
+from sqlalchemy import Column, ForeignKey, Integer, String, Enum, Table
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import create_engine
 from eralchemy2 import render_er
@@ -9,63 +9,55 @@ Base = declarative_base()
 
 
 
-class Follower(Base):
-    __tablename__ = "follower"
-    user_from_id= Column(Integer, ForeignKey('user.id'), nullable = False, primary_key = True)
-    user_to_id = Column(Integer,ForeignKey('user.id'), nullable = False, primary_key = True)
 
-    
 
+
+Followers = Table(
+    'followers',
+    Base.metadata,
+    Column('follower_id', Integer, ForeignKey('user.ID'), primary_key=True),
+    Column('following_id', Integer, ForeignKey('user.ID'), primary_key=True)
+)
 
 class User(Base):
-    __tablename__ = 'user'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, primary_key=True)
-    username = Column(String(250), unique=True, nullable=False)
-    firstname = Column(String(250))
-    lastname = Column(String(250))
-    email = Column(String(250),unique=True, nullable = False)
-    
-    followers = relationship(
+    __tablename__='user'
+    ID= Column(Integer, primary_key=True)
+    user_name = Column(String(250),nullable=False)
+    first_name = Column(String(250),nullable=False)
+    last_name = Column(String(250),nullable=False)
+    email = Column(String(250),nullable=False)
+    post= relationship('Post', backref='user', lazy=True)
+    comment= relationship('Comment', backref='user', lazy=True)
+    followed = relationship(
         'User',
-        secondary= 'Follower',
-        primaryjoin = (Follower.user_from_id == id),
-        secondaryjoin = (Follower.user_to_id == id),
-        backref="following",
-        lazy='dynamic'
+        secondary=Followers,
+        primaryjoin=(Followers.c.following_id==id), # Seguidos
+        secondaryjoin=(Followers.c.follower_id==id), # Yo sigo
+        backref='following',
+        lazy='True'
     )
 
-
-
-
-class Post(Base):
-    __tablename__ = "post"
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable = False)
-    post = relationship(User)
-
 class Media(Base):
-    __tablename__ = "media"
-    id = Column(Integer, primary_key = True)
-    type= Column(Enum("image","video","audio"))
-    url = Column(String,nullable=False)
-    post_id = Column(Integer, ForeignKey('post.id'), nullable = False)
-    post = relationship("Post", back_populates="media")
+    __tablename__= 'media'
+    ID= Column(Integer, primary_key=True)
+    type = Column(Enum('photo','video','reel'),nullable=False)
+    url = Column(String(250),nullable=False)
+    post_id = Column(Integer, ForeignKey('post.ID'))
+    
+class Post(Base):
+    __tablename__='post'
+    ID= Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.ID'))
+    comment= relationship('Comment',backref='post', lazy=True)
+    media= relationship('Media',backref='post', lazy=True)
 
 class Comment(Base):
-      __tablename__ = 'comment'
-    # Here we define columns for the table address.
-    # Notice that each column is also a normal Python instance attribute.
-    id = Column(Integer, primary_key=True)
-    comment_text = Column(String(250))
-    author_id = Column(Integer , ForeignKey('user.id'), nullable = False)
-    post_id = Column(Integer, ForeignKey('post.id'), nullable = False )
-    comment_user = relationship(User)
-    comment_post = relationship(Post)
-    def to_dict(self):
-        return {}
-    
+    __tablename__='comment'
+    ID= Column(Integer, primary_key=True)
+    comment_text = Column(String(250),nullable=False)
+    author_id = Column(Integer, ForeignKey('user.ID'))
+    post_id = Column(Integer, ForeignKey('post.ID'))
+
 
 ## Draw from SQLAlchemy base
 try:
